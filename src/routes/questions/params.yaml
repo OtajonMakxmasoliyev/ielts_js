@@ -1,0 +1,195 @@
+paths:
+  /questions/create:
+    post:
+      summary: Create a new question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      responses:
+        '201':
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '400':
+          description: Invalid input
+
+  /questions/list:
+    post:
+      summary: Get all questions
+      responses:
+        '200':
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+        '500':
+          description: Server error
+
+  /questions/get-one:
+    post:
+      summary: Get a single question by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "652f5e3a1c2a4b3d8e0f1234"
+      responses:
+        '200':
+          description: A single question
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '404':
+          description: Question not found
+
+  /questions/update:
+    post:
+      summary: Update a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Question ID
+                updates:
+                  $ref: '#/components/schemas/Question'
+      responses:
+        '200':
+          description: Updated question
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '404':
+          description: Question not found
+
+  /questions/delete:
+    post:
+      summary: Delete a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Question deleted successfully
+        '404':
+          description: Question not found
+
+  /questions/check-answers:
+    post:
+      summary: Check user answers for a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                questionId:
+                  type: string
+                answers:
+                  type: array
+                  items:
+                    type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Answer check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  correct:
+                    type: boolean
+                  score:
+                    type: number
+        '400':
+          description: Bad request
+        '404':
+          description: Question not found
+components:
+  schemas:
+    Question:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        type:
+          type: string
+          enum: [multiple_choice, essay, fill_blank, listening, speaking, matching]
+        parts:
+          type: array
+          items:
+            type: object
+            properties:
+              markdown:
+                type: string
+                description: Part question in markdown format
+              answers:
+                type: array
+                items:
+                  type: string
+                description: Correct answers for the part
+              part_type:
+                type: string
+        choices:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              type:
+                type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        published:
+          type: boolean
+          default: false
