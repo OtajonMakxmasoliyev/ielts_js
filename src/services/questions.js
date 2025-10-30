@@ -27,10 +27,10 @@ export async function checkAnswers({ questionId, answers }) {
             if (student) {
                 if (Array.isArray(correct)) {
                     const studentArray = Array.isArray(student) ? student : [student];
-                    const correctCount = studentArray.filter(s => correct.includes(s)).length;
+                    const correctCount = studentArray.filter(s => correct.map(item => item.toLowerCase()).includes(s.toLowerCase())).length;
                     percent = (correctCount / correct.length) * 100;
                 } else {
-                    percent = student === correct ? 100 : 0;
+                    percent = student.toLowerCase() === correct.toLowerCase() ? 100 : 0;
                 }
             }
 

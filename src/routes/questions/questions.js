@@ -121,12 +121,12 @@ router.post("/check-answers", async (req, res) => {
         const result = await checkAnswers({ questionId, answers });
 
         if ("err" in result) {
-            return res.status(400).json({...result, });
+            return res.status(400).json({ ...result, });
         }
+        user?.answers.push(result);
+        await user?.save()
         res.json(result);
 
-        // user?.answers.push(result);
-        // await user?.save()
 
 
     } catch (err) {

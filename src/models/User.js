@@ -19,12 +19,7 @@ const UserSchema = new Schema({
     active: { type: Boolean, default: true },
     answers: [
         {
-            examId: { type: String, required: true },
-            answers: { type: Schema.Types.Mixed, required: true },
-            submittedAt: { type: Date, default: Date.now },
-            score: { type: Number, required: true },
-            total: { type: Number, required: true },
-            results: { type: [Boolean], reuired: true }
+            type: Schema.Types.Mixed // Bu joyga istalgan JSON/Object qabul qilinadi
         }
     ],
     devices: [DeviceSchema]
