@@ -19,6 +19,10 @@ const options = {
                 url: "http://localhost:3000",
                 description: "Development server",
             },
+            {
+                url: "https://ielts-js.onrender.com",
+                description: "Production server",
+            },
         ],
         components: {
             securitySchemes: {
