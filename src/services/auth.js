@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import { ERROR_TYPE } from "../enums/error.enum.js";
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET || "accesssecret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "refreshsecret";
@@ -9,7 +10,7 @@ const accessToken = (user) => {
     const access_token = jwt.sign(
         { id: user._id, role: user.role },
         ACCESS_SECRET,
-        { expiresIn: "15m" }
+        { expiresIn: "1d" }
     );
 
     return access_token
@@ -32,16 +33,28 @@ const refreshToken = (user, deviceId) => {
 
 
 export async function register(email, password, deviceId) {
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, passwordHash, });
-    const access_token = accessToken(user)
+    try {
+        const passwordHash = await bcrypt.hash(password, 10);
+        const user = await User.create({ email, passwordHash, });
+        const access_token = accessToken(user)
 
-    user.devices.push({
-        deviceId, token: access_token, lastUsed: new Date()
-    })
-    await user.save()
-    const { role } = user.toJSON()
-    return { email, role, access_token };
+        user.devices.push({
+            deviceId, token: access_token, lastUsed: new Date()
+        })
+        await user.save()
+        const { role } = user.toJSON()
+        return { email, role, access_token };
+    } catch (error) {
+        if (error.code === 11000) {
+            return {
+                error: {
+                    code: ERROR_TYPE.EXIST_USER,
+                    message: "User already exist"
+                }
+            };
+
+        }
+    }
 }
 
 export async function login(email, password, deviceId) {
