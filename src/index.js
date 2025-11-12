@@ -4,6 +4,7 @@ import authRouter from "./routes/auth/auth.js";
 import questionRouter from "./routes/questions/questions.js";
 import { swaggerSpec, swaggerUi } from "./swagger.js";
 import { connectDB } from "./db.js";
+import { authMiddleware } from "./middleware/auth.js";
 const PORT = process.env.PORT || 3000;
 const app = express();
 
@@ -21,7 +22,7 @@ app.use(cors({
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/auth", authRouter);
-app.use("/questions", questionRouter);
+app.use("/questions", authMiddleware, questionRouter);
 
 connectDB().then(() => {
     app.listen(PORT, () => {

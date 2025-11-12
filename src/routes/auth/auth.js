@@ -4,6 +4,50 @@ import { register, login, refresh, deleteDevices, getDevices } from "../../servi
 
 const router = Router();
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register new user
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - deviceId
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "user@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "password123"
+ *               deviceId:
+ *                 type: string
+ *                 example: "038f270ca678c66f5bf393f958e8eebcf98b049e5a0d32a69cabf46b576cabbf"
+ *     responses:
+ *       200:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 email:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                 access_token:
+ *                   type: string
+ *       400:
+ *         description: Registration error
+ */
 router.post("/register", async (req, res) => {
     const { email, password, deviceId } = req.body;
     try {
@@ -21,22 +65,41 @@ router.post("/register", async (req, res) => {
  *   post:
  *     summary: Login user
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - deviceId
  *             properties:
  *               email:
  *                 type: string
+ *                 example: "user@example.com"
  *               password:
  *                 type: string
+ *                 example: "password123"
  *               deviceId:
  *                 type: string
+ *                 example: "038f270ca678c66f5bf393f958e8eebcf98b049e5a0d32a69cabf46b576cabbf"
  *     responses:
  *       200:
  *         description: Access and refresh tokens
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access_token:
+ *                   type: string
+ *                 refresh_token:
+ *                   type: string
+ *                 email:
+ *                   type: string
  *       400:
  *         description: Invalid credentials
  */
@@ -62,22 +125,37 @@ router.post("/login", async (req, res) => {
  *   post:
  *     summary: Refresh access token
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - userId
+ *               - refreshToken
+ *               - deviceId
  *             properties:
  *               userId:
  *                 type: string
+ *                 example: "6914a6e5ff8f45bd5b2e7206"
  *               refreshToken:
  *                 type: string
+ *                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *               deviceId:
  *                 type: string
+ *                 example: "038f270ca678c66f5bf393f958e8eebcf98b049e5a0d32a69cabf46b576cabbf"
  *     responses:
  *       200:
  *         description: New access token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
  *       401:
  *         description: Invalid refresh token
  */
@@ -97,18 +175,41 @@ router.post("/refresh", async (req, res) => {
  *   post:
  *     summary: Get all user devices
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - email
  *             properties:
  *               email:
  *                 type: string
+ *                 example: "user@example.com"
  *     responses:
  *       200:
  *         description: List of user devices
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 devices:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       deviceId:
+ *                         type: string
+ *                       token:
+ *                         type: string
+ *                       lastUsed:
+ *                         type: string
+ *                         format: date-time
  *       404:
  *         description: User not found
  */
@@ -132,20 +233,33 @@ router.post("/devices", async (req, res) => {
  *   post:
  *     summary: Delete a specific device for the user
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - email
+ *               - deviceId
  *             properties:
  *               email:
  *                 type: string
+ *                 example: "user@example.com"
  *               deviceId:
  *                 type: string
+ *                 example: "038f270ca678c66f5bf393f958e8eebcf98b049e5a0d32a69cabf46b576cabbf"
  *     responses:
  *       200:
- *         description: Device deleted successfully, returns remaining devices
+ *         description: Device deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
  *       404:
  *         description: User not found
  */

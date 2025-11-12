@@ -10,10 +10,31 @@ const options = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "Auth API",
+            title: "IELTS JS API",
             version: "1.0.0",
-            description: "User authentication API (register, login, refresh)",
+            description: "User authentication API with JWT Bearer token support",
         },
+        servers: [
+            {
+                url: "http://localhost:3000",
+                description: "Development server",
+            },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: "http",
+                    scheme: "bearer",
+                    bearerFormat: "JWT",
+                    description: "Enter your JWT token (access_token from /auth/login)",
+                },
+            },
+        },
+        security: [
+            {
+                bearerAuth: [],
+            },
+        ],
     },
     apis: [join(__dirname, "./routes/**/*.{js,ts,yaml}")],
 };

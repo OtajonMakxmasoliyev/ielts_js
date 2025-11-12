@@ -528,10 +528,68 @@ const generateDeviceId = () => {
 
 ---
 
+---
+
+## 🔧 Swagger UI - Token o'rnatish qo'llanmasi
+
+Swagger UI'da JWT token bilan protected endpointlarni test qilish uchun:
+
+### 1. Swagger UI'ni oching
+```
+http://localhost:3000/api-docs
+```
+
+### 2. Login qiling va token oling
+
+1. **`POST /auth/login`** endpointini oching
+2. "Try it out" tugmasini bosing
+3. Request body'ga ma'lumotlaringizni kiriting:
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "deviceId": "038f270ca678c66f5bf393f958e8eebcf98b049e5a0d32a69cabf46b576cabbf"
+}
+```
+4. **Execute** tugmasini bosing
+5. Response'dan `access_token` ni nusxalang (copy qiling)
+
+### 3. Tokenni Swagger'ga o'rnating
+
+1. Swagger UI'ning yuqori qismidagi **🔓 Authorize** tugmasini bosing
+2. "bearerAuth" modal oynasi ochiladi
+3. **Value** maydoniga `access_token` ni qo'ying (faqat token, "Bearer" so'zini qo'shmaslik kerak!)
+   ```
+   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTRh...
+   ```
+4. **Authorize** tugmasini bosing
+5. **Close** tugmasini bosing
+
+### 4. Protected endpointlarni test qiling
+
+Endi `/questions/*` endpointlari tokenli ishlaydi:
+- `/questions/list` - barcha savollarni olish
+- `/questions/create` - yangi savol yaratish
+- `/questions/get-one` - bitta savolni olish
+- `/questions/update` - savolni yangilash
+- `/questions/delete` - savolni o'chirish
+- `/questions/check-answers` - javoblarni tekshirish
+
+Har bir request'da avtomatik ravishda `Authorization: Bearer <token>` header qo'shiladi.
+
+### 5. Tokenni o'chirish
+
+Tokenni o'chirish uchun:
+1. **🔓 Authorize** tugmasini bosing
+2. **Logout** tugmasini bosing
+
+---
+
 ## 📞 Support
 
 Bu API IELTS JS backend tizimi uchun authentication va device management funksiyalarini ta'minlaydi.
 
 **Base URL:** `http://localhost:3000`
+**Swagger Docs:** `http://localhost:3000/api-docs`
 **Version:** 1.0.0
 **Last Updated:** 2025-11-12

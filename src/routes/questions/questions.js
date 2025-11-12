@@ -9,8 +9,31 @@ import Part from "../../models/Part.js";
 const router = express.Router();
 
 /**
- * CREATE
- * POST /create
+ * @swagger
+ * /questions/create:
+ *   post:
+ *     summary: Create a new question
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               parts:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       201:
+ *         description: Question created successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
  */
 router.post("/create", async (req, res) => {
     try {
@@ -37,8 +60,20 @@ router.post("/create", async (req, res) => {
 });
 
 /**
- * READ ALL
- * POST /list
+ * @swagger
+ * /questions/list:
+ *   post:
+ *     summary: Get all questions
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all questions
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post("/list", async (_req, res) => {
     try {
@@ -50,9 +85,32 @@ router.post("/list", async (_req, res) => {
 });
 
 /**
- * READ ONE
- * POST /get-one
- * body: { id: string }
+ * @swagger
+ * /questions/get-one:
+ *   post:
+ *     summary: Get a single question by ID
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Question details
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Question not found
  */
 router.post("/get-one", async (req, res) => {
     try {
@@ -66,9 +124,34 @@ router.post("/get-one", async (req, res) => {
 });
 
 /**
- * UPDATE
- * POST /update
- * body: { id: string, ...updates }
+ * @swagger
+ * /questions/update:
+ *   post:
+ *     summary: Update a question
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Question updated successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Question not found
  */
 router.post("/update", async (req, res) => {
     try {
@@ -86,9 +169,32 @@ router.post("/update", async (req, res) => {
 });
 
 /**
- * DELETE
- * POST /delete
- * body: { id: string }
+ * @swagger
+ * /questions/delete:
+ *   post:
+ *     summary: Delete a question
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Question deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Question not found
  */
 router.post("/delete", async (req, res) => {
     try {
@@ -105,19 +211,51 @@ router.post("/delete", async (req, res) => {
 
 
 /**
- * CHECK ANSWERS
- * POST /check-answers
- * body: { questionId:string, answers:string }
+ * @swagger
+ * /questions/check-answers:
+ *   post:
+ *     summary: Check user's answers for a question
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - questionId
+ *               - answers
+ *             properties:
+ *               questionId:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439011"
+ *               answers:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["A", "B", "C"]
+ *     responses:
+ *       200:
+ *         description: Answers checked successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Question not found
  */
 router.post("/check-answers", async (req, res) => {
     try {
-        const { questionId, answers, email } = req.body;
+        const { questionId, answers } = req.body;
+        const reqUser = req?.user
 
 
         if (!questionId || !Array.isArray(answers)) {
             return res.status(400).json({ error: "questionId and answers are required" });
         }
-        const user = await User.findOne({ email, active: true })
+        const user = await User.findById(reqUser.id)
         const result = await checkAnswers({ questionId, answers });
 
         if ("err" in result) {
