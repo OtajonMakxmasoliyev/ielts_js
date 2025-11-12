@@ -40,6 +40,7 @@ export async function checkAnswers({ questionId, answers }) {
                     const correctCount = studentArray.filter(s => {
                         if (!s) return false;
                         const studentLower = String(s).trim().toLowerCase();
+
                         return correct.some(item =>
                             item && String(item).trim().toLowerCase() === studentLower
                         );
@@ -47,7 +48,7 @@ export async function checkAnswers({ questionId, answers }) {
 
                     // Agar kamida bitta to'g'ri javob topilsa
                     if (correctCount > 0) {
-                        percent = 100;
+                        percent = (correctCount / correct.length) * 100;
                         isCorrect = true;
                     }
                 } else {

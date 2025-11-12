@@ -1,22 +1,19 @@
 {
-  "questionId": "6909993ad635ac52da5ada20",
+  "questionId": "690f53ca3162ad2f5ed2d0fd",
   "userEmail": "otajonmaxmasoliyev775@gmail.com",
   "answers": [
-    "Britain",
     [
-      "late 18th century",
-      "18th century"
+      "B",
+      "C"
     ],
-    "rural",
-    "false",
-    "true",
-    "false",
-    "not given",
-    "not given"
+    "climb",
+    "voya",
+    "B",
+    "add"
   ],
-  "submittedAt": "2025-11-04T10:30:00.000Z",
+  "submittedAt": "2025-11-10T14:30:00.000Z",
   "metadata": {
-    "timeSpent": 1200,
+    "timeSpent": 3200,
     "browser": "Chrome",
     "device": "Desktop"
   }

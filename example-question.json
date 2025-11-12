@@ -1,41 +1,74 @@
 {
-  "title": "IELTS Reading Test - Sample Questions",
-  "type": "reading",
-  "published": true,
-  "tags": ["reading", "practice", "beginner"],
-  "metadata": {
-    "duration": 20,
-    "difficulty": "intermediate",
-    "totalQuestions": 8
-  },
-  "attachments": [
-    {
-      "url": "https://example.com/reading-passage.pdf",
-      "type": "pdf"
-    }
-  ],
+  "_id": "690f53ca3162ad2f5ed2d0fd",
+  "title": "IELTS test",
+  "slug": "ielts-test",
+  "type": "multiple_choice",
   "parts": [
     {
-      "markdown": "## Part 1: Multiple Choice\n\nRead the passage and answer the following questions:\n\n**Passage:**\nThe Industrial Revolution began in Britain in the late 18th century. It was a period of major industrialization that transformed rural societies into industrial and urban ones. New manufacturing processes were developed, and the use of machines became widespread.\n\n**Questions:**\n\n1. Where did the Industrial Revolution begin?\n2. When did the Industrial Revolution start?\n3. What type of societies were transformed?",
+      "_id": "690f53ca3162ad2f5ed2d0ff",
+      "markdown": "Questions 15 — 20\nWhat is the main theme of each of the following musicals?\nChoose SIX answers from the box and write the correct letter, A-H, next to questions 15-20.\nMain theme\nA living in a different century\nB managing to achieve success\nC ageing slowly\nD growing up\nE experiencing disappointment",
       "answers": [
-        "Britain",
-        ["late 18th century", "18th century", "1700s"],
-        ["rural", "rural societies"]
+        [
+          "B",
+          "C"
+        ]
       ],
-      "part_type": ["READING_MCQ"],
-      "collection_id": "example_collection_001"
+      "collection_id": "690f53ca3162ad2f5ed2d0fd",
+      "part_type": [
+        "matching form_completion"
+      ],
+      "__v": 0,
+      "createdAt": "2025-11-08T14:29:30.655Z",
+      "updatedAt": "2025-11-08T14:29:30.655Z"
     },
     {
-      "markdown": "## Part 2: True/False/Not Given\n\nRead the statements and write TRUE, FALSE, or NOT GIVEN:\n\n4. The Industrial Revolution happened suddenly.\n5. Machines became commonly used during this period.\n6. The Industrial Revolution started in France.\n7. People moved from countryside to cities.\n8. The revolution lasted exactly 50 years.",
+      "_id": "690f53ca3162ad2f5ed2d100",
+      "markdown": "Musicals\n15 The Climb …………… ..\n16 The Voyagers …………… ..",
       "answers": [
-        ["false", "f"],
-        ["true", "t"],
-        ["false", "f"],
-        ["not given", "ng"],
-        ["not given", "ng"]
+        "climb",
+        "voya"
       ],
-      "part_type": ["READING_TFNG"],
-      "collection_id": "example_collection_001"
+      "collection_id": "690f53ca3162ad2f5ed2d0fd",
+      "part_type": [
+        "listening"
+      ],
+      "__v": 0,
+      "createdAt": "2025-11-08T14:29:30.655Z",
+      "updatedAt": "2025-11-08T14:29:30.655Z"
+    },
+    {
+      "_id": "690f53ca3162ad2f5ed2d101",
+      "markdown": "Questions 21 — 26\nChoose the correct letter A, B or C.\n21 What part of Kathy's dissertation has the tutor just read?\nA Her results section\nB Her introductory chapter\nC Her review of the literature",
+      "answers": [
+        "B"
+      ],
+      "collection_id": "690f53ca3162ad2f5ed2d0fd",
+      "part_type": [
+        "multiple_choice"
+      ],
+      "__v": 0,
+      "createdAt": "2025-11-08T14:29:30.655Z",
+      "updatedAt": "2025-11-08T14:29:30.655Z"
+    },
+    {
+      "_id": "690f53ca3162ad2f5ed2d102",
+      "markdown": "PART 1 Questions 1 – 10\nComplete the table below.\nWrite ONE WORD AND/OR A NUMBER for each answer.\nThe London Relocation Services\nCustomer's name Anna Woods\n• Current address | 118 1 …………… Park,Ballysillan\n• Postcode. | BT149BJ",
+      "answers": [
+        "add"
+      ],
+      "collection_id": "690f53ca3162ad2f5ed2d0fd",
+      "part_type": [
+        "table_completion"
+      ],
+      "__v": 0,
+      "createdAt": "2025-11-08T14:29:30.655Z",
+      "updatedAt": "2025-11-08T14:29:30.655Z"
     }
-  ]
+  ],
+  "attachments": [],
+  "tags": [],
+  "published": false,
+  "createdAt": "2025-11-08T14:29:29.562Z",
+  "updatedAt": "2025-11-08T14:29:30.822Z",
+  "__v": 1
 }

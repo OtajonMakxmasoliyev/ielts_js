@@ -1,0 +1,163 @@
+{
+    "examId": "690f53ca3162ad2f5ed2d0fd",
+    "questions": {
+        "_id": "690f53ca3162ad2f5ed2d0fd",
+        "title": "IELTS test",
+        "slug": "ielts-test",
+        "type": "multiple_choice",
+        "parts": [
+            {
+                "_id": "690f53ca3162ad2f5ed2d0ff",
+                "markdown": "Questions 15 — 20\nWhat is the main theme of each of the following musicals?\nChoose SIX answers from the box and write the correct letter, A-H, next to questions 15-20.\nMain theme\nA living in a different century\nB managing to achieve success\nC ageing slowly\nD growing up\nE experiencing disappointment",
+                "answers": [
+                    [
+                        "B",
+                        "C"
+                    ]
+                ],
+                "collection_id": "690f53ca3162ad2f5ed2d0fd",
+                "part_type": [
+                    "matching form_completion"
+                ],
+                "__v": 0,
+                "createdAt": "2025-11-08T14:29:30.655Z",
+                "updatedAt": "2025-11-08T14:29:30.655Z"
+            },
+            {
+                "_id": "690f53ca3162ad2f5ed2d100",
+                "markdown": "Musicals\n15 The Climb …………… ..\n16 The Voyagers …………… ..",
+                "answers": [
+                    "climb",
+                    "voya"
+                ],
+                "collection_id": "690f53ca3162ad2f5ed2d0fd",
+                "part_type": [
+                    "listening"
+                ],
+                "__v": 0,
+                "createdAt": "2025-11-08T14:29:30.655Z",
+                "updatedAt": "2025-11-08T14:29:30.655Z"
+            },
+            {
+                "_id": "690f53ca3162ad2f5ed2d101",
+                "markdown": "Questions 21 — 26\nChoose the correct letter A, B or C.\n21 What part of Kathy's dissertation has the tutor just read?\nA Her results section\nB Her introductory chapter\nC Her review of the literature",
+                "answers": [
+                    "B"
+                ],
+                "collection_id": "690f53ca3162ad2f5ed2d0fd",
+                "part_type": [
+                    "multiple_choice"
+                ],
+                "__v": 0,
+                "createdAt": "2025-11-08T14:29:30.655Z",
+                "updatedAt": "2025-11-08T14:29:30.655Z"
+            },
+            {
+                "_id": "690f53ca3162ad2f5ed2d102",
+                "markdown": "PART 1 Questions 1 – 10\nComplete the table below.\nWrite ONE WORD AND/OR A NUMBER for each answer.\nThe London Relocation Services\nCustomer's name Anna Woods\n• Current address | 118 1 …………… Park,Ballysillan\n• Postcode. | BT149BJ",
+                "answers": [
+                    "add"
+                ],
+                "collection_id": "690f53ca3162ad2f5ed2d0fd",
+                "part_type": [
+                    "table_completion"
+                ],
+                "__v": 0,
+                "createdAt": "2025-11-08T14:29:30.655Z",
+                "updatedAt": "2025-11-08T14:29:30.655Z"
+            }
+        ],
+        "attachments": [],
+        "tags": [],
+        "published": false,
+        "createdAt": "2025-11-08T14:29:29.562Z",
+        "updatedAt": "2025-11-08T14:29:30.822Z",
+        "__v": 1
+    },
+    "results": [
+        100,
+        0,
+        0,
+        0,
+        0
+    ],
+    "detailed": [
+        {
+            "partIndex": 0,
+            "questionIndex": 0,
+            "globalIndex": 0,
+            "correct": [
+                "B",
+                "C"
+            ],
+            "student": "b",
+            "percent": 100,
+            "isCorrect": true
+        },
+        {
+            "partIndex": 1,
+            "questionIndex": 0,
+            "globalIndex": 1,
+            "correct": "climb",
+            "student": "a",
+            "percent": 0,
+            "isCorrect": false
+        },
+        {
+            "partIndex": 1,
+            "questionIndex": 1,
+            "globalIndex": 2,
+            "correct": "voya",
+            "student": "d",
+            "percent": 0,
+            "isCorrect": false
+        },
+        {
+            "partIndex": 2,
+            "questionIndex": 0,
+            "globalIndex": 3,
+            "correct": "B",
+            "student": "e",
+            "percent": 0,
+            "isCorrect": false
+        },
+        {
+            "partIndex": 3,
+            "questionIndex": 0,
+            "globalIndex": 4,
+            "correct": "add",
+            "student": "f",
+            "percent": 0,
+            "isCorrect": false
+        }
+    ],
+    "score": 20,
+    "total": 5,
+    "correctCount": 1,
+    "incorrectCount": 4,
+    "answers": [
+        "b",
+        "a",
+        "d",
+        "e",
+        "f",
+        "c",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "alexandra",
+        "9bj",
+        "07700900123",
+        "gmail",
+        "15th",
+        "2",
+        "1200",
+        "north",
+        "one",
+        "parking"
+    ],
+    "submittedAt": "2025-11-10T05:54:05.972Z"
+}
