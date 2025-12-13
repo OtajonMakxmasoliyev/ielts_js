@@ -1,6 +1,7 @@
 import {Router} from "express";
 import {register, login, refresh, deleteDevices, getDevices} from "../../services/auth.js";
-
+import {authMiddleware} from "../../middleware/auth.js";
+import User from "../../models/User.js";
 
 const router = Router();
 
@@ -256,6 +257,51 @@ router.post("/refresh", async (req, res) => {
 //         res.status(404).json({ error: (e).message });
 //     }
 // });
+
+
+/**
+ * @swagger
+ * /auth/get-current-user:
+ *   post:
+ *     summary: Get current user info
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                 active:
+ *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.post("/get-current-user", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId).select("-passwordHash -devices -answers");
+
+        if (!user) {
+            return res.status(404).json({error: "Foydalanuvchi topilmadi"});
+        }
+
+        res.json(user);
+    } catch (e) {
+        res.status(500).json({error: e.message});
+    }
+});
 
 
 export default router;

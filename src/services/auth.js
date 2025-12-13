@@ -80,7 +80,7 @@ export async function login(email, password,) {
     await user.save();
 
     return {
-        access_token, refresh_token, email: user.email,
+        access_token, refresh_token, email: user.email, role: user.role,
     };
 }
 
