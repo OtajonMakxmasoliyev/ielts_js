@@ -54,7 +54,7 @@ http://localhost:3000
                                         └──► Qaytadan LOGIN ga o'tish
 
     ┌──────────────────┐
-    │ 5. REFRESH TOKEN │ ◄── access_token tugaganda
+    │ 5. REFRESH TOKEN │ ◄── access_token finishedda
     └──────────────────┘
 ```
 
@@ -312,7 +312,7 @@ curl -X 'POST' \
 ```
 
 **Use Case:**
-- `access_token` muddati tugaganda (1 kun)
+- `access_token` expired_date finishedda (1 kun)
 - Refresh token ham tugasa (7 kun) → qaytadan LOGIN qiling
 
 ---
@@ -386,7 +386,7 @@ const deviceId = crypto.createHash('sha256')
 | 200 | Success | Request muvaffaqiyatli bajarildi |
 | 400 | Bad Request | Invalid credentials yoki ma'lumot xato |
 | 404 | Not Found | User topilmadi |
-| 401 | Unauthorized | Token yaroqsiz yoki muddati tugagan |
+| 401 | Unauthorized | Token yaroqsiz yoki expired_date finished |
 
 ---
 

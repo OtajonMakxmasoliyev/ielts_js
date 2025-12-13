@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import authRouter from "./routes/auth/auth.js";
 import questionRouter from "./routes/questions/questions.js";
+import subscriptionRouter from "./routes/subscription/subscription.js";
+import tarifRouter from "./routes/tarif/tarif.js";
 import { swaggerSpec, swaggerUi } from "./swagger.js";
 import { connectDB } from "./db.js";
 import { authMiddleware } from "./middleware/auth.js";
@@ -23,6 +25,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/auth", authRouter);
 app.use("/questions", authMiddleware, questionRouter);
+app.use("/subscription", authMiddleware, subscriptionRouter);
+app.use("/tarif", authMiddleware, tarifRouter);
 
 connectDB().then(() => {
     app.listen(PORT, () => {
