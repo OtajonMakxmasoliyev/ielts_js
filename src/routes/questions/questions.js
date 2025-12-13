@@ -252,7 +252,6 @@ router.post("/check-answers", async (req, res) => {
         let subscription = await Subscription.findOne({
             userId: reqUser.id, type: "premium", active: true
         }).populate("tarifId");
-        console.log(subscription, "subscription avval premiumga ega emasmi?")
         // Premium topilmasa yoki tugagan bo'lsa, paket tekshiriladi
         if (!subscription || subscription.finished) {
             if (subscription && subscription.finished) {
@@ -263,7 +262,6 @@ router.post("/check-answers", async (req, res) => {
             subscription = await Subscription.findOne({
                 userId: reqUser.id, type: "package", active: true
             }).populate("tarifId");
-            console.log(subscription, "subscription avval paketga ega emasmi?")
         }
 
         if (!subscription) {

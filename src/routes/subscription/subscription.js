@@ -56,21 +56,19 @@ router.post("/buy", async (req, res) => {
 
         // Mavjud aktiv subscriptionlarni tekshirish
         const existingSubscription = await Subscription.findOne({
-            userId, active: true
+            userId, active: true,
         });
-        console.log(existingSubscription, "subscription mavjud emasmi?")
         // Agar mavjud subscription boshqa tarifga tegishli bo'lsa - uni yopish
-        if (existingSubscription && existingSubscription.tarifId.toString() !== tarifId.toString()) {
+        if (existingSubscription) {
             existingSubscription.active = false;
             await existingSubscription.save();
-            console.log(existingSubscription, "subscription tarifId chiqdi")
         }
-        let existingCount = tarif.tests_count
+        let existingCount = tarif.tests_count;
         if (tarif.type === "package") {
             // PAKET: testlar soni cheklangan, muddat yo'q
             if (existingSubscription && !existingSubscription.finished) {
                 // Mavjud paketga testlar qo'shish
-                existingCount += existingSubscription.tests_count;
+                existingCount += existingSubscription.tests_count - existingSubscription?.used.length || 0;
 
             }
 
@@ -102,19 +100,13 @@ router.post("/buy", async (req, res) => {
 
             // Yangi premium yaratish
             const newSubscription = new Subscription({
-                userId,
-                tarifId,
-                type: "premium",
-                tests_count: null,
-                expired_date,
-                used: []
+                userId, tarifId, type: "premium", tests_count: null, expired_date, used: []
             });
 
             await newSubscription.save();
 
             return res.status(201).json({
-                message: "Premium muvaffaqiyatli sotib olindi",
-                subscription: await newSubscription.populate("tarifId")
+                message: "Premium muvaffaqiyatli sotib olindi", subscription: await newSubscription.populate("tarifId")
             });
         }
 
