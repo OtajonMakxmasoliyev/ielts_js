@@ -22,7 +22,7 @@ const UserSchema = new Schema({
             type: Schema.Types.Mixed // Bu joyga istalgan JSON/Object qabul qilinadi
         }
     ],
-    devices: [DeviceSchema]
+    // devices: [DeviceSchema]
 }, { timestamps: true });
 
 export default model("User", UserSchema);

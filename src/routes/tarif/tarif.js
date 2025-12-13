@@ -15,8 +15,17 @@ const router = express.Router();
  */
 router.post("/list", async (req, res) => {
     try {
-        const tarifs = await Tarif.find({ active: true }).sort({ price: 1 });
-        res.json(tarifs);
+        const tarifs = await Tarif.find({ active: true }).sort({ type: 1, price: 1 });
+
+        // Tariflarni turlarga ajratish
+        const packages = tarifs.filter(t => t.type === "package");
+        const premiums = tarifs.filter(t => t.type === "premium");
+
+        res.json({
+            packages,
+            premiums,
+            all: tarifs
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -76,24 +85,30 @@ router.post("/get-one", async (req, res) => {
  *             type: object
  *             required:
  *               - name
- *               - tests_count
+ *               - type
  *               - price
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Premium"
+ *                 example: "Premium Oylik"
+ *               type:
+ *                 type: string
+ *                 enum: [package, premium]
+ *                 example: "premium"
  *               description:
  *                 type: string
- *                 example: "Premium tarif - 50 ta test"
+ *                 example: "Oylik premium tarif"
  *               tests_count:
  *                 type: number
  *                 example: 50
+ *                 description: "Faqat package uchun"
  *               price:
  *                 type: number
  *                 example: 99000
  *               duration_days:
  *                 type: number
  *                 example: 30
+ *                 description: "Faqat premium uchun"
  *     responses:
  *       201:
  *         description: Tarif yaratildi
@@ -109,18 +124,28 @@ router.post("/create", async (req, res) => {
             return res.status(403).json({ error: "Faqat admin tarif yarata oladi" });
         }
 
-        const { name, description, tests_count, price, duration_days } = req.body;
+        const { name, type, description, tests_count, price, duration_days } = req.body;
 
-        if (!name || !tests_count || price === undefined) {
-            return res.status(400).json({ error: "name, tests_count va price talab qilinadi" });
+        if (!name || !type || price === undefined) {
+            return res.status(400).json({ error: "name, type va price talab qilinadi" });
+        }
+
+        // Validatsiya
+        if (type === "package" && !tests_count) {
+            return res.status(400).json({ error: "Package uchun tests_count talab qilinadi" });
+        }
+
+        if (type === "premium" && !duration_days) {
+            return res.status(400).json({ error: "Premium uchun duration_days talab qilinadi" });
         }
 
         const tarif = new Tarif({
             name,
+            type,
             description,
-            tests_count,
+            tests_count: type === "package" ? tests_count : null,
             price,
-            duration_days
+            duration_days: type === "premium" ? duration_days : null
         });
 
         await tarif.save();
@@ -178,6 +203,9 @@ router.post("/update", async (req, res) => {
         }
 
         const { id, ...updates } = req.body;
+
+        // type ni o'zgartirish mumkin emas
+        delete updates.type;
 
         const tarif = await Tarif.findByIdAndUpdate(
             id,

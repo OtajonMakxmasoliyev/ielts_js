@@ -36,75 +36,90 @@ const router = express.Router();
  */
 router.post("/buy", async (req, res) => {
     try {
-        const { tarifId } = req.body;
+        const {tarifId} = req.body;
         const userId = req.user.id;
 
         if (!tarifId) {
-            return res.status(400).json({ error: "tarifId talab qilinadi" });
+            return res.status(400).json({error: "tarifId talab qilinadi"});
         }
 
         // Tarifni tekshirish
         const tarif = await Tarif.findById(tarifId);
 
         if (!tarif) {
-            return res.status(404).json({ error: "Tarif topilmadi" });
+            return res.status(404).json({error: "Tarif topilmadi"});
         }
 
         if (!tarif.active) {
-            return res.status(400).json({ error: "Bu tarif hozirda mavjud emas" });
+            return res.status(400).json({error: "Bu tarif hozirda mavjud emas"});
         }
 
-        // Muddat hisoblash
-        let expired_date = null;
-        if (tarif.duration_days) {
-            expired_date = new Date();
-            expired_date.setDate(expired_date.getDate() + tarif.duration_days);
+        // Mavjud aktiv subscriptionlarni tekshirish
+        const existingSubscription = await Subscription.findOne({
+            userId, active: true
+        });
+        console.log(existingSubscription, "subscription mavjud emasmi?")
+        // Agar mavjud subscription boshqa tarifga tegishli bo'lsa - uni yopish
+        if (existingSubscription && existingSubscription.tarifId.toString() !== tarifId.toString()) {
+            existingSubscription.active = false;
+            await existingSubscription.save();
+            console.log(existingSubscription, "subscription tarifId chiqdi")
         }
+        let existingCount = tarif.tests_count
+        if (tarif.type === "package") {
+            // PAKET: testlar soni cheklangan, muddat yo'q
+            if (existingSubscription && !existingSubscription.finished) {
+                // Mavjud paketga testlar qo'shish
+                existingCount += existingSubscription.tests_count;
 
-        // Mavjud aktiv tarifni tekshirish
-        let subscription = await Subscription.findOne({ userId, active: true });
-
-        if (subscription && !subscription.finished) {
-            // Agar aktiv tarif bo'lsa va hali tugamagan bo'lsa - testlar sonini qo'shish
-            subscription.tests_count += tarif.tests_count;
-            subscription.tarifId = tarifId;
-            if (expired_date) {
-                // Agar yangi muddatni qo'shish kerak bo'lsa
-                if (subscription.expired_date) {
-                    subscription.expired_date = new Date(Math.max(
-                        subscription.expired_date.getTime(),
-                        expired_date.getTime()
-                    ));
-                } else {
-                    subscription.expired_date = expired_date;
-                }
             }
-            await subscription.save();
 
-            return res.status(200).json({
-                message: "Mavjud tarifga qo'shildi",
-                subscription: await subscription.populate("tarifId")
+            // Yangi paket yaratish
+            const newSubscription = new Subscription({
+                userId, tarifId, type: "package", tests_count: existingCount, expired_date: null, used: []
+            });
+
+            await newSubscription.save();
+
+            return res.status(201).json({
+                message: "Paket muvaffaqiyatli sotib olindi", subscription: await newSubscription.populate("tarifId")
+            });
+
+        } else {
+            // PREMIUM: testlar cheksiz, muddat bor
+            let expired_date;
+
+            if (existingSubscription && !existingSubscription.finished && existingSubscription.type === "premium") {
+                // Mavjud premiumga muddat qo'shish
+                const currentExpiry = new Date(existingSubscription.expired_date || new Date());
+                expired_date = new Date(currentExpiry);
+                expired_date.setDate(expired_date.getDate() + tarif.duration_days);
+            } else {
+                // Yangi premium - bugundan boshlab
+                expired_date = new Date();
+                expired_date.setDate(expired_date.getDate() + tarif.duration_days);
+            }
+
+            // Yangi premium yaratish
+            const newSubscription = new Subscription({
+                userId,
+                tarifId,
+                type: "premium",
+                tests_count: null,
+                expired_date,
+                used: []
+            });
+
+            await newSubscription.save();
+
+            return res.status(201).json({
+                message: "Premium muvaffaqiyatli sotib olindi",
+                subscription: await newSubscription.populate("tarifId")
             });
         }
 
-        // Yangi tarif yaratish
-        const newSubscription = new Subscription({
-            userId,
-            tarifId,
-            tests_count: tarif.tests_count,
-            expired_date,
-            used: []
-        });
-
-        await newSubscription.save();
-
-        res.status(201).json({
-            message: "Tarif muvaffaqiyatli sotib olindi",
-            subscription: await newSubscription.populate("tarifId")
-        });
-
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -125,21 +140,15 @@ router.post("/buy", async (req, res) => {
 router.post("/my", async (req, res) => {
     try {
         const userId = req.user.id;
-
-        const subscriptions = await Subscription.find({ userId })
-            .populate("tarifId")
-            .sort({ createdAt: -1 });
-
-        // Aktiv tarifni ajratib ko'rsatish
-        const activeSubscription = subscriptions.find(s => s.active && !s.finished);
-
-        res.json({
-            active: activeSubscription || null,
-            all: subscriptions
+        const subscription = await Subscription.findOne({
+            userId, active: true, finished: {$ne: true}
         });
 
+
+        res.json(subscription);
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -161,46 +170,50 @@ router.post("/check", async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const subscription = await Subscription.findOne({ userId, active: true })
-            .populate("tarifId");
+        // Avval premium tekshiriladi (ustuvorlik)
+        let subscription = await Subscription.findOne({
+            userId, type: "premium", active: true
+        }).populate("tarifId");
+
+        // Premium topilmasa yoki tugagan bo'lsa, paket tekshiriladi
+        if (!subscription || subscription.finished) {
+            if (subscription && subscription.finished) {
+                subscription.active = false;
+                await subscription.save();
+            }
+
+            subscription = await Subscription.findOne({
+                userId, type: "package", active: true
+            }).populate("tarifId");
+        }
 
         if (!subscription) {
             return res.json({
-                canTakeTest: false,
-                message: "Aktiv tarif topilmadi. Iltimos, tarif sotib oling.",
-                subscription: null
+                canTakeTest: false, message: "Aktiv tarif topilmadi. Iltimos, tarif sotib oling.", subscription: null
             });
         }
 
-        // Muddat tekshirish
-        if (subscription.expired_date && new Date() > subscription.expired_date) {
+        // Tugaganligini tekshirish
+        if (subscription.finished) {
             subscription.active = false;
             await subscription.save();
 
+            const message = subscription.type === "premium" ? "Premium muddati tugagan" : `Paket limiti tugagan. ${subscription.tests_count} ta testdan ${subscription.used.length} tasi ishlangan.`;
+
             return res.json({
-                canTakeTest: false,
-                message: "Tarif muddati tugagan",
-                subscription
+                canTakeTest: false, message, subscription
             });
         }
 
-        // Test limiti tekshirish
-        if (subscription.finished) {
-            return res.json({
-                canTakeTest: false,
-                message: `Test limiti tugagan. ${subscription.tests_count} ta testdan ${subscription.used.length} tasi ishlangan.`,
-                subscription
-            });
-        }
+        // Test ishlash mumkin
+        const message = subscription.type === "premium" ? `Premium aktiv. Muddat: ${subscription.expired_date.toLocaleDateString()}` : `Paket aktiv. Qolgan: ${subscription.remaining_tests} ta test`;
 
         res.json({
-            canTakeTest: true,
-            message: `Test ishlash mumkin. Qolgan: ${subscription.remaining_tests} ta`,
-            subscription
+            canTakeTest: true, message, subscription
         });
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -222,27 +235,35 @@ router.post("/history", async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const subscription = await Subscription.findOne({ userId, active: true })
+        // Barcha aktiv subscriptionlar
+        const subscriptions = await Subscription.find({userId, active: true})
             .populate("tarifId")
             .populate("used.testId", "title type slug");
 
-        if (!subscription) {
+        if (subscriptions.length === 0) {
             return res.json({
-                message: "Aktiv tarif topilmadi",
-                history: []
+                message: "Aktiv tarif topilmadi", history: []
             });
         }
 
+        // Barcha ishlangan testlarni birlashtirish
+        const allHistory = subscriptions.flatMap(sub => sub.used.map(u => ({
+            ...u.toObject(), subscription_type: sub.type, tarif: sub.tarifId
+        }))).sort((a, b) => new Date(b.used_time) - new Date(a.used_time));
+
         res.json({
-            tarif: subscription.tarifId,
-            tests_count: subscription.tests_count,
-            used_count: subscription.used.length,
-            remaining_count: subscription.remaining_tests,
-            history: subscription.used
+            subscriptions: subscriptions.map(s => ({
+                type: s.type,
+                tarif: s.tarifId,
+                tests_count: s.tests_count,
+                used_count: s.used.length,
+                remaining_count: s.remaining_tests,
+                expired_date: s.expired_date
+            })), history: allHistory
         });
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 

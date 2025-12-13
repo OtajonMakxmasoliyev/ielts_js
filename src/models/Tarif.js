@@ -6,14 +6,20 @@ const TarifSchema = new Schema({
         required: true,
         unique: true
     },
+    type: {
+        type: String,
+        enum: ["package", "premium"],
+        required: true
+        // package = cheklangan testlar, muddatsiz
+        // premium = cheksiz testlar, muddatli
+    },
     description: {
         type: String,
         default: ""
     },
     tests_count: {
         type: Number,
-        required: true,
-        min: 1
+        default: null // premium uchun null (cheksiz)
     },
     price: {
         type: Number,
@@ -22,7 +28,7 @@ const TarifSchema = new Schema({
     },
     duration_days: {
         type: Number,
-        default: null // null = cheksiz muddat
+        default: null // package uchun null (muddatsiz)
     },
     active: {
         type: Boolean,

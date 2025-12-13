@@ -248,32 +248,40 @@ router.post("/check-answers", async (req, res) => {
             return res.status(400).json({error: "questionId and answers are required"});
         }
 
-        // Tarif tekshiruvi
-        const subscription = await Subscription.findOne({userId: reqUser.id, active: true})
-            .populate("tarifId");
+        // Avval premium tekshiriladi (ustuvorlik)
+        let subscription = await Subscription.findOne({
+            userId: reqUser.id, type: "premium", active: true
+        }).populate("tarifId");
+        console.log(subscription, "subscription avval premiumga ega emasmi?")
+        // Premium topilmasa yoki tugagan bo'lsa, paket tekshiriladi
+        if (!subscription || subscription.finished) {
+            if (subscription && subscription.finished) {
+                subscription.active = false;
+                await subscription.save();
+            }
+
+            subscription = await Subscription.findOne({
+                userId: reqUser.id, type: "package", active: true
+            }).populate("tarifId");
+            console.log(subscription, "subscription avval paketga ega emasmi?")
+        }
 
         if (!subscription) {
             return res.status(403).json({
-                error: "NO_SUBSCRIPTION",
-                message: "Aktiv tarif topilmadi. Iltimos, tarif sotib oling."
+                error: "NO_SUBSCRIPTION", message: "Aktiv tarif topilmadi. Iltimos, tarif sotib oling."
             });
         }
 
-        // Muddat tekshirish
-        if (subscription.expired_date && new Date() > subscription.expired_date) {
+        // Tugaganligini tekshirish
+        if (subscription.finished) {
             subscription.active = false;
             await subscription.save();
-            return res.status(403).json({
-                error: "SUBSCRIPTION_EXPIRED",
-                message: "Tarif muddati tugagan"
-            });
-        }
 
-        // Test limiti tekshirish
-        if (subscription.used.length >= subscription.tests_count) {
+            const message = subscription.type === "premium" ? "Premium muddati tugagan" : `Paket limiti tugagan. ${subscription.tests_count} ta testdan ${subscription.used.length} tasi ishlangan.`;
+
             return res.status(403).json({
-                error: "TEST_LIMIT_REACHED",
-                message: `Test limiti tugagan. ${subscription.tests_count} ta testdan ${subscription.used.length} tasi ishlangan.`,
+                error: subscription.type === "premium" ? "SUBSCRIPTION_EXPIRED" : "TEST_LIMIT_REACHED",
+                message,
                 remaining: 0
             });
         }
@@ -291,20 +299,19 @@ router.post("/check-answers", async (req, res) => {
 
         // Tarifga ishlangan testni qo'shish
         subscription.used.push({
-            testId: questionId,
-            score: result.score,
-            used_time: new Date()
+            testId: questionId, score: result.score, used_time: new Date()
         });
         await subscription.save();
 
         // Javobga tarif ma'lumotlarini qo'shish
         res.json({
-            ...result,
-            subscription: {
+            ...result, subscription: {
+                type: subscription.type,
                 tarif: subscription.tarifId,
                 tests_count: subscription.tests_count,
                 used_count: subscription.used.length,
-                remaining_count: subscription.tests_count - subscription.used.length
+                remaining_count: subscription.remaining_tests,
+                expired_date: subscription.expired_date
             }
         });
 

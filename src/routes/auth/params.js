@@ -22,8 +22,6 @@
  *                 type: string
  *               password:
  *                 type: string
- *               deviceId:
- *                 type: string
  *     responses:
  *       200:
  *         description: User created successfully
@@ -47,8 +45,6 @@
  *               email:
  *                 type: string
  *               password:
- *                 type: string
- *               deviceId:
  *                 type: string
  *     responses:
  *       200:
@@ -74,8 +70,6 @@
  *                 type: string
  *               refreshToken:
  *                 type: string
- *               deviceId:
- *                 type: string
  *     responses:
  *       200:
  *         description: New access token
@@ -83,48 +77,46 @@
  *         description: Invalid refresh token
  */
 
-/**
- * @swagger
- * /auth/devices:
- *   post:
- *     summary: Get all user devices
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *     responses:
- *       200:
- *         description: List of user devices
- *       404:
- *         description: User not found
- */
+// /**
+//  * @swagger
+//  * /auth/devices:
+//  *   post:
+//  *     summary: Get all user devices
+//  *     tags: [Auth]
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             properties:
+//  *               email:
+//  *                 type: string
+//  *     responses:
+//  *       200:
+//  *         description: List of user devices
+//  *       404:
+//  *         description: User not found
+//  */
 
-/**
- * @swagger
- * /auth/delete-device:
- *   post:
- *     summary: Delete a specific device for the user
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               deviceId:
- *                 type: string
- *     responses:
- *       200:
- *         description: Device deleted successfully, returns remaining devices
- *       404:
- *         description: User not found
- */
+// /**
+//  * @swagger
+//  * /auth/delete-device:
+//  *   post:
+//  *     summary: Delete a specific device for the user
+//  *     tags: [Auth]
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             properties:
+//  *               email:
+//  *                 type: string
+//  *     responses:
+//  *       200:
+//  *         description: Device deleted successfully, returns remaining devices
+//  *       404:
+//  *         description: User not found
+//  */

@@ -11,10 +11,14 @@ const SubscriptionSchema = new Schema({
         ref: "Tarif",
         required: true
     },
+    type: {
+        type: String,
+        enum: ["package", "premium"],
+        required: true
+    },
     tests_count: {
         type: Number,
-        required: true,
-        min: 1
+        default: null // premium uchun null (cheksiz)
     },
     used: [
         {
@@ -29,18 +33,26 @@ const SubscriptionSchema = new Schema({
     },
     expired_date: {
         type: Date,
-        default: null
+        default: null // package uchun null (muddatsiz)
     }
 }, { timestamps: true });
 
-// Virtual field - qolgan testlar soni
+// Virtual field - qolgan testlar soni (faqat package uchun)
 SubscriptionSchema.virtual("remaining_tests").get(function() {
+    if (this.type === "premium") return null; // cheksiz
     return this.tests_count - this.used.length;
 });
 
 // Virtual field - finishedmi yoki yo'q
 SubscriptionSchema.virtual("finished").get(function() {
-    return this.used.length >= this.tests_count;
+    if (this.type === "package") {
+        // Paket: testlar tugaganda
+        return this.used.length >= this.tests_count;
+    } else {
+        // Premium: muddat tugaganda
+        if (!this.expired_date) return false;
+        return new Date() > this.expired_date;
+    }
 });
 
 // JSON ga virtual fieldlarni qo'shish
