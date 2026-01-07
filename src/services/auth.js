@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import {ERROR_TYPE} from "../enums/error.enum.js";
+import Subscription from "../models/Subscription.js";
+import Tarif from "../models/Tarif.js";
+import Promo from "../models/Promo.js";
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET || "accesssecret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "refreshsecret";
@@ -22,27 +25,82 @@ const refreshToken = (user,) => {
 
 
 // export async function register(email, password, deviceId) {
-export async function register(email, password,) {
+export async function register(email, password, promoCode = null) {
     try {
         const passwordHash = await bcrypt.hash(password, 10);
-        const user = await User.create({email, passwordHash,});
-        const access_token = accessToken(user)
+        const user = await User.create({email, passwordHash});
+        let promoApplied = false;
+        // console.log(promoCode)
+        if (promoCode) {
+            // Promokodni bazadan qidirish
+            const promo = await Promo.findOne({
+                code: promoCode.toUpperCase(), active: true, expire_date: {$gt: new Date()}
+            });
 
-        // user.devices.push({
-        //     deviceId, token: access_token, lastUsed: new Date()
-        // })
-        await user.save()
-        const {role} = user.toJSON()
+            if (promo) {
+                // A. Yangi ro'yxatdan o'tgan foydalanuvchiga tarif berish (ixtiyoriy)
+                const baseTarif = await Tarif.findById(promo.tarifId);
+                if (baseTarif) {
+                    await Subscription.create({
+                        userId: user._id,
+                        tarifId: baseTarif._id,
+                        type: baseTarif.type,
+                        tests_count: baseTarif.tests_count,
+                        active: true
+                    });
+                    promoApplied = true;
+                }
+
+                // B. Influencer (Promo egasi) uchun bonus hisoblash
+                promo.used_count += 1;
+
+                // Har X ta odam kelganda (masalan, har 3-chi, 6-chi, 9-chi...)
+                if (promo.used_count % promo.required_referrals === 0) {
+                    // 1. Mukofot paketini bazadan olamiz
+                    const rewardTarif = await Tarif.findById(promo.rewardTarifId);
+
+                    if (rewardTarif) {
+                        // 2. Influencerning xuddi shu turdagi aktiv obunasini qidiramiz
+                        let influencerSub = await Subscription.findOne({
+                            userId: promo.ownerId, tarifId: rewardTarif._id, active: true
+                        });
+
+                        if (influencerSub) {
+                            // Agar shu paketdan obunasi bo'lsa, testlar sonini qo'shamiz
+                            influencerSub.tests_count += rewardTarif.tests_count;
+                            await influencerSub.save();
+                        } else {
+                            // Agar obunasi bo'lmasa, yangi obuna yaratamiz
+                            await Subscription.create({
+                                userId: promo.ownerId,
+                                tarifId: rewardTarif._id,
+                                type: rewardTarif.type,
+                                tests_count: rewardTarif.tests_count,
+                                active: true,
+                            });
+                        }
+                    }
+                }
+
+                // Promokodning o'zgarishlarini saqlaymiz (used_count oshgani uchun)
+                await promo.save();
+            }
+        }
+        const access_token = accessToken(user);
+        await user.save();
+
+        const {role} = user.toJSON();
         return {email, role, access_token};
+
     } catch (error) {
         if (error.code === 11000) {
             return {
                 error: {
-                    code: ERROR_TYPE.EXIST_USER, message: "User already exist"
+                    code: ERROR_TYPE.EXIST_USER, message: "User already exists"
                 }
             };
-
         }
+        throw error;
     }
 }
 

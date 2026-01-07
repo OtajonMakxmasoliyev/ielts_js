@@ -1,9 +1,4 @@
 import { Schema, model, } from "mongoose";
-
-
-
-
-
 const DeviceSchema = new Schema({
     token: { type: String, required: true },
     deviceId: { type: String, required: true },

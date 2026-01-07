@@ -28,6 +28,9 @@ const router = Router();
  *               password:
  *                 type: string
  *                 example: "password123"
+ *               promoCode:
+ *                 type: string
+ *                 example: "PROMO_KOD"
  *     responses:
  *       200:
  *         description: User created successfully
@@ -46,9 +49,10 @@ const router = Router();
  *         description: Registration error
  */
 router.post("/register", async (req, res) => {
-    const {email, password} = req.body;
+    const {email, password, promoCode} = req.body;
+    // console.log(req.body)
     try {
-        const user = await register(email, password);
+        const user = await register(email, password, promoCode);
         res.json(user);
     } catch (e) {
         res.status(400).json({error: (e).message});

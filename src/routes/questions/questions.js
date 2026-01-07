@@ -4,6 +4,7 @@ import {checkAnswers} from "../../services/questions.js";
 import User from "../../models/User.js";
 import Part from "../../models/Part.js";
 import Subscription from "../../models/Subscription.js";
+import {authMiddleware} from "../../middleware/auth.js";
 
 
 const router = express.Router();
@@ -76,7 +77,8 @@ router.post("/create", async (req, res) => {
  */
 router.post("/list", async (_req, res) => {
     try {
-        const questions = await Question.find();
+        const sub = await Subscription.findOne({userId: _req.user.id}).populate("tarifId");
+        const questions = await Question.find({"metadata.degree": sub.tarifId.degree});
         res.json(questions);
     } catch (err) {
         res.status(500).json({error: (err).message});
@@ -239,87 +241,57 @@ router.post("/delete", async (req, res) => {
  *       404:
  *         description: Question not found
  */
-router.post("/check-answers", async (req, res) => {
+router.post("/check-answers", authMiddleware, async (req, res) => {
     try {
         const {questionId, answers} = req.body;
-        const reqUser = req?.user;
+        const userId = req.user.id;
 
-        if (!questionId || !Array.isArray(answers)) {
-            return res.status(400).json({error: "questionId and answers are required"});
-        }
-
-        // Avval premium tekshiriladi (ustuvorlik)
         let subscription = await Subscription.findOne({
-            userId: reqUser.id, type: "premium", active: true
+            userId, active: true, type: "premium"
         }).populate("tarifId");
-        // Premium topilmasa yoki tugagan bo'lsa, paket tekshiriladi
+
         if (!subscription || subscription.finished) {
-            if (subscription && subscription.finished) {
+            if (subscription?.finished) {
                 subscription.active = false;
                 await subscription.save();
             }
-
             subscription = await Subscription.findOne({
-                userId: reqUser.id, type: "package", active: true
+                userId, active: true, type: "package"
             }).populate("tarifId");
         }
 
-        if (!subscription) {
+        if (!subscription || subscription.finished) {
+            if (subscription?.finished) {
+                subscription.active = false;
+                await subscription.save();
+            }
             return res.status(403).json({
-                error: "NO_SUBSCRIPTION", message: "Aktiv tarif topilmadi. Iltimos, tarif sotib oling."
+                error: "NO_ACTIVE_SUBSCRIPTION", message: "Sizda aktiv tarif mavjud emas yoki limiti tugagan."
             });
         }
 
-        // Tugaganligini tekshirish
-        if (subscription.finished) {
-            subscription.active = false;
-            await subscription.save();
-
-            const message = subscription.type === "premium" ? "Premium muddati tugagan" : `Paket limiti tugagan. ${subscription.tests_count} ta testdan ${subscription.used.length} tasi ishlangan.`;
-
-            return res.status(403).json({
-                error: subscription.type === "premium" ? "SUBSCRIPTION_EXPIRED" : "TEST_LIMIT_REACHED",
-                message,
-                remaining: 0
-            });
-        }
-
-        const user = await User.findById(reqUser.id);
         const result = await checkAnswers({questionId, answers});
+        if (result.err) return res.status(400).json(result);
 
-        if ("err" in result) {
-            return res.status(400).json({...result});
-        }
+        const user = await User.findById(userId);
+        user.answers.push(result);
+        await user.save();
 
-        // Natijani user.answers ga saqlash
-        user?.answers.push(result);
-        await user?.save();
-
-        // Tarifga ishlangan testni qo'shish
         subscription.used.push({
             testId: questionId, score: result.score, used_time: new Date()
         });
         await subscription.save();
 
-        // Javobga tarif ma'lumotlarini qo'shish
         res.json({
-            ...result, subscription: {
-                type: subscription.type,
-                tarif: subscription.tarifId,
-                tests_count: subscription.tests_count,
-                used_count: subscription.used.length,
-                remaining_count: subscription.remaining_tests,
-                expired_date: subscription.expired_date
+            ...result, subscription_info: {
+                type: subscription.type, remaining_tests: subscription.remaining_tests, // Virtual field ishlaydi
+                used_total: subscription.used.length, expires_at: subscription.expired_date
             }
         });
 
     } catch (err) {
-        if ((err).message === "Question not found") {
-            return res.status(404).json({error: "Question not found"});
-        }
-        res.status(500).json({error: (err).message});
+        res.status(500).json({error: err.message});
     }
 });
-
 
 export default router;

@@ -15,19 +15,17 @@ const router = express.Router();
  */
 router.post("/list", async (req, res) => {
     try {
-        const tarifs = await Tarif.find({ active: true }).sort({ type: 1, price: 1 });
+        const tarifs = await Tarif.find({active: true}).sort({type: 1, price: 1});
 
         // Tariflarni turlarga ajratish
         const packages = tarifs.filter(t => t.type === "package");
         const premiums = tarifs.filter(t => t.type === "premium");
 
         res.json({
-            packages,
-            premiums,
-            all: tarifs
+            packages, premiums, all: tarifs
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -56,14 +54,14 @@ router.post("/list", async (req, res) => {
  */
 router.post("/get-one", async (req, res) => {
     try {
-        const { id } = req.body;
+        const {id} = req.body;
         const tarif = await Tarif.findById(id);
         if (!tarif) {
-            return res.status(404).json({ error: "Tarif topilmadi" });
+            return res.status(404).json({error: "Tarif topilmadi"});
         }
         res.json(tarif);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -87,6 +85,7 @@ router.post("/get-one", async (req, res) => {
  *               - name
  *               - type
  *               - price
+ *               - degree
  *             properties:
  *               name:
  *                 type: string
@@ -95,6 +94,10 @@ router.post("/get-one", async (req, res) => {
  *                 type: string
  *                 enum: [package, premium]
  *                 example: "premium"
+ *               degree:
+ *                 type: string
+ *                 enum: [free, limited]
+ *                 example: "limited"
  *               description:
  *                 type: string
  *                 example: "Oylik premium tarif"
@@ -121,22 +124,22 @@ router.post("/create", async (req, res) => {
     try {
         // Admin tekshiruvi
         if (req.user.role !== "admin") {
-            return res.status(403).json({ error: "Faqat admin tarif yarata oladi" });
+            return res.status(403).json({error: "Faqat admin tarif yarata oladi"});
         }
 
-        const { name, type, description, tests_count, price, duration_days } = req.body;
+        const {name, type, description, tests_count, price, duration_days, degree} = req.body;
 
         if (!name || !type || price === undefined) {
-            return res.status(400).json({ error: "name, type va price talab qilinadi" });
+            return res.status(400).json({error: "name, type va price talab qilinadi"});
         }
 
         // Validatsiya
         if (type === "package" && !tests_count) {
-            return res.status(400).json({ error: "Package uchun tests_count talab qilinadi" });
+            return res.status(400).json({error: "Package uchun tests_count talab qilinadi"});
         }
 
         if (type === "premium" && !duration_days) {
-            return res.status(400).json({ error: "Premium uchun duration_days talab qilinadi" });
+            return res.status(400).json({error: "Premium uchun duration_days talab qilinadi"});
         }
 
         const tarif = new Tarif({
@@ -145,7 +148,8 @@ router.post("/create", async (req, res) => {
             description,
             tests_count: type === "package" ? tests_count : null,
             price,
-            duration_days: type === "premium" ? duration_days : null
+            duration_days: type === "premium" ? duration_days : null,
+            degree
         });
 
         await tarif.save();
@@ -153,9 +157,9 @@ router.post("/create", async (req, res) => {
 
     } catch (err) {
         if (err.code === 11000) {
-            return res.status(400).json({ error: "Bu nomdagi tarif allaqachon mavjud" });
+            return res.status(400).json({error: "Bu nomdagi tarif allaqachon mavjud"});
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -199,28 +203,24 @@ router.post("/create", async (req, res) => {
 router.post("/update", async (req, res) => {
     try {
         if (req.user.role !== "admin") {
-            return res.status(403).json({ error: "Faqat admin tarifni yangilay oladi" });
+            return res.status(403).json({error: "Faqat admin tarifni yangilay oladi"});
         }
 
-        const { id, ...updates } = req.body;
+        const {id, ...updates} = req.body;
 
         // type ni o'zgartirish mumkin emas
         delete updates.type;
 
-        const tarif = await Tarif.findByIdAndUpdate(
-            id,
-            { ...updates, updatedAt: new Date() },
-            { new: true }
-        );
+        const tarif = await Tarif.findByIdAndUpdate(id, {...updates, updatedAt: new Date()}, {new: true});
 
         if (!tarif) {
-            return res.status(404).json({ error: "Tarif topilmadi" });
+            return res.status(404).json({error: "Tarif topilmadi"});
         }
 
         res.json(tarif);
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -254,26 +254,22 @@ router.post("/update", async (req, res) => {
 router.post("/delete", async (req, res) => {
     try {
         if (req.user.role !== "admin") {
-            return res.status(403).json({ error: "Faqat admin tarifni o'chira oladi" });
+            return res.status(403).json({error: "Faqat admin tarifni o'chira oladi"});
         }
 
-        const { id } = req.body;
+        const {id} = req.body;
 
         // Soft delete - faqat active ni false qilish
-        const tarif = await Tarif.findByIdAndUpdate(
-            id,
-            { active: false },
-            { new: true }
-        );
+        const tarif = await Tarif.findByIdAndUpdate(id, {active: false}, {new: true});
 
         if (!tarif) {
-            return res.status(404).json({ error: "Tarif topilmadi" });
+            return res.status(404).json({error: "Tarif topilmadi"});
         }
 
-        res.json({ message: "Tarif o'chirildi", tarif });
+        res.json({message: "Tarif o'chirildi", tarif});
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 
@@ -294,14 +290,14 @@ router.post("/delete", async (req, res) => {
 router.post("/all", async (req, res) => {
     try {
         if (req.user.role !== "admin") {
-            return res.status(403).json({ error: "Faqat admin ko'ra oladi" });
+            return res.status(403).json({error: "Faqat admin ko'ra oladi"});
         }
 
-        const tarifs = await Tarif.find().sort({ createdAt: -1 });
+        const tarifs = await Tarif.find().sort({createdAt: -1});
         res.json(tarifs);
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({error: err.message});
     }
 });
 

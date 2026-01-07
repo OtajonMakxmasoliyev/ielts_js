@@ -10,12 +10,12 @@ const options = {
     definition: {
         openapi: "3.0.0", info: {
             title: "IELTS JS API",
-            version: "1.0.0",
+            version: "1.3.0",
             description: "User authentication API with JWT Bearer token support",
         }, servers: [{
-            url: "http://localhost:3000", description: "Development server 1.3.0",
+            url: "http://localhost:3000", description: "Development server",
         }, {
-            url: "https://ielts-js.onrender.com", description: "Production server 1.3.0",
+            url: "https://ielts-js.onrender.com", description: "Production server",
         },], components: {
             securitySchemes: {
                 bearerAuth: {
