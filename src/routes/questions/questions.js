@@ -63,25 +63,59 @@ router.post("/create", async (req, res) => {
  * @swagger
  * /questions/list:
  *   post:
- *     summary: Get all questions
+ *     summary: Get all questions (user's degree based)
  *     tags: [Questions]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of all questions
+ *         description: List of questions based on user subscription degree
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Server error
  */
-router.post("/list", async (_req, res) => {
+router.post("/list", async (req, res) => {
     try {
-        const sub = await Subscription.findOne({userId: _req.user.id}).populate("tarifId");
-        const questions = await Question.find({"metadata.degree": sub.tarifId.degree});
-        res.json(questions);
+        const userId = req.user.id;
+
+        // Aktiv obunani topish (premium yoki package)
+        let sub = await Subscription.findOne({
+            userId,
+            active: true,
+            finished: {$ne: true}
+        }).populate({
+            path: "tarifId",
+            select: "degree name type tests_count"
+        });
+
+        // Agar obuna bo'lmasa, free testlarni qaytaramiz
+        let degree = "free";
+        let subscriptionInfo = null;
+
+        if (sub && sub.tarifId) {
+            degree = sub.tarifId.degree || "free";
+            subscriptionInfo = {
+                type: sub.type,
+                degree: degree,
+                remaining_tests: sub.remaining_tests,
+                tarif_name: sub.tarifId.name
+            };
+        }
+
+        // Testlarni degree bo'yicha filterlash
+        const questions = await Question.find({
+            "metadata.degree": degree
+        }).select("title type slug tags metadata published createdAt");
+
+        res.json({
+            degree,
+            subscription: subscriptionInfo,
+            questions,
+            total: questions.length
+        });
     } catch (err) {
-        res.status(500).json({error: (err).message});
+        res.status(500).json({error: err.message});
     }
 });
 
