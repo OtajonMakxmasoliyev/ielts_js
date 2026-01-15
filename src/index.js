@@ -5,11 +5,13 @@ import questionRouter from "./routes/questions/questions.js";
 import subscriptionRouter from "./routes/subscription/subscription.js";
 import tarifRouter from "./routes/tarif/tarif.js";
 import promoRouter from "./routes/promo/promo.js";
+import uploadRouter from "./routes/upload/upload.js";
 import {swaggerSpec, swaggerUi} from "./swagger.js";
 import {connectDB} from "./db.js";
 import {authMiddleware} from "./middleware/auth.js";
 
 const PORT = process.env.PORT || 3000;
+
 const app = express();
 
 app.use(express.json());
@@ -29,6 +31,7 @@ app.use("/questions", authMiddleware, questionRouter);
 app.use("/subscription", authMiddleware, subscriptionRouter);
 app.use("/tarif", authMiddleware, tarifRouter);
 app.use("/promo", authMiddleware, promoRouter);
+app.use("/upload", authMiddleware, uploadRouter);
 
 connectDB().then(() => {
     app.listen(PORT, () => {
