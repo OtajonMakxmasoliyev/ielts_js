@@ -5,6 +5,8 @@ import {ERROR_TYPE} from "../enums/error.enum.js";
 import Subscription from "../models/Subscription.js";
 import Tarif from "../models/Tarif.js";
 import Promo from "../models/Promo.js";
+import {generateOTP, getOTPExpiration, isOTPExpired} from "../utils/otp.js";
+import {sendOTPEmail} from "../config/mail.js";
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET || "accesssecret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "refreshsecret";
@@ -148,14 +150,108 @@ export async function register(email, password, promoCode = null) {
             throw new Error("Email va password talab qilinadi");
         }
 
+        // Email allaqachon mavjudligini tekshirish
+        const existingUser = await User.findOne({email});
+        if (existingUser) {
+            // Agar user tasdiqlanmagan bo'lsa, qayta OTP yuborish
+            if (!existingUser.isVerified) {
+                const otp = generateOTP();
+                const otpExpires = getOTPExpiration();
+
+                await User.findByIdAndUpdate(existingUser._id, {
+                    otp,
+                    otpExpires
+                });
+
+                // OTP yuborish
+                await sendOTPEmail(email, otp);
+
+                return {
+                    message: "Email tasdiqlash kodi yuborildi",
+                    email,
+                    requiresVerification: true
+                };
+            }
+
+            return {
+                error: {
+                    code: ERROR_TYPE.EXIST_USER,
+                    message: "User already exists"
+                }
+            };
+        }
+
         // Parol xashlash
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // Foydalanuvchi yaratish
-        const user = await User.create({email, passwordHash});
+        // OTP generatsiya qilish
+        const otp = generateOTP();
+        const otpExpires = getOTPExpiration();
 
-        // Default FREE obuna yaratish
-        // Avval free tarifni qidiramiz, yo'q qo'lsa yaratamiz
+        // Foydalanuvchi yaratish (isVerified: false)
+        const user = await User.create({
+            email,
+            passwordHash,
+            otp,
+            otpExpires,
+            isVerified: false
+        });
+
+        // OTP yuborish
+        await sendOTPEmail(email, otp);
+
+        return {
+            message: "Ro'yxatdan o'tdingiz! Emailingizga tasdiqlash kodi yuborildi.",
+            email,
+            requiresVerification: true
+        };
+
+    } catch (error) {
+        if (error.code === 11000) {
+            return {
+                error: {
+                    code: ERROR_TYPE.EXIST_USER,
+                    message: "User already exists"
+                }
+            };
+        }
+        throw error;
+    }
+}
+
+/**
+ * Email tasdiqlash (OTP verify)
+ */
+export async function verifyOTP(email, otp, promoCode = null) {
+    try {
+        // Input validatsiya
+        if (!email || !otp) {
+            throw new Error("Email va OTP talab qilinadi");
+        }
+
+        // Foydalanuvchini topish
+        const user = await User.findOne({email});
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        // OTP tekshirish
+        if (user.otp !== otp) {
+            throw new Error("Noto'g'ri tasdiqlash kodi");
+        }
+
+        // OTP muddati tekshirish
+        if (isOTPExpired(user.otpExpires)) {
+            throw new Error("Tasdiqlash kodi muddati tugagan");
+        }
+
+        // Userni tasdiqlash
+        user.isVerified = true;
+        user.otp = null;
+        user.otpExpires = null;
+        await user.save();
+
+        // Endi FREE obuna berish
         let freeTarif = await Tarif.findOne({degree: "free", active: true});
 
         if (!freeTarif) {
@@ -165,7 +261,7 @@ export async function register(email, password, promoCode = null) {
                 type: "package",
                 degree: "free",
                 description: "Bepul tarif - oddiy testlar",
-                tests_count: 5, // 5 ta bepul test
+                tests_count: 5,
                 price: 0,
                 duration_days: null,
                 active: true
@@ -190,10 +286,8 @@ export async function register(email, password, promoCode = null) {
 
             if (promo) {
                 promoResult = await PromoService.processPromo(promo, user._id);
-                // Agar promokod orqali pulli obuna berilgan bo'lsa
                 if (promoResult.userGranted) {
                     upgradedToPaid = true;
-                    // Free obunani o'chirish
                     await Subscription.findOneAndUpdate(
                         {userId: user._id, tarifId: freeTarif._id},
                         {active: false}
@@ -206,6 +300,7 @@ export async function register(email, password, promoCode = null) {
 
         const {role} = user.toJSON();
         return {
+            message: "Email muvaffaqiyatli tasdiqlandi!",
             email,
             role,
             access_token,
@@ -214,14 +309,45 @@ export async function register(email, password, promoCode = null) {
         };
 
     } catch (error) {
-        if (error.code === 11000) {
-            return {
-                error: {
-                    code: ERROR_TYPE.EXIST_USER,
-                    message: "User already exists"
-                }
-            };
+        throw error;
+    }
+}
+
+/**
+ * OTP qayta yuborish
+ */
+export async function resendOTP(email) {
+    try {
+        if (!email) {
+            throw new Error("Email talab qilinadi");
         }
+
+        const user = await User.findOne({email});
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (user.isVerified) {
+            throw new Error("Email allaqachon tasdiqlangan");
+        }
+
+        // Yangi OTP generatsiya qilish
+        const otp = generateOTP();
+        const otpExpires = getOTPExpiration();
+
+        user.otp = otp;
+        user.otpExpires = otpExpires;
+        await user.save();
+
+        // OTP yuborish
+        await sendOTPEmail(email, otp);
+
+        return {
+            message: "Tasdiqlash kodi qayta yuborildi",
+            email
+        };
+
+    } catch (error) {
         throw error;
     }
 }
@@ -237,6 +363,11 @@ export async function login(email, password) {
 
     const user = await User.findOne({email});
     if (!user) throw new Error("User not found");
+
+    // Email tasdiqlanganligini tekshirish
+    if (!user.isVerified) {
+        throw new Error("Email tasdiqlanmagan. Iltimos, emailingizga yuborilgan kodni tasdiqlang.");
+    }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) throw new Error("Invalid password");

@@ -1,5 +1,5 @@
 import {Router} from "express";
-import {register, login, refresh, deleteDevices, getDevices} from "../../services/auth.js";
+import {register, login, refresh, deleteDevices, getDevices, verifyOTP, resendOTP} from "../../services/auth.js";
 import {authMiddleware} from "../../middleware/auth.js";
 import User from "../../models/User.js";
 
@@ -307,5 +307,81 @@ router.post("/get-current-user", authMiddleware, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /auth/verify:
+ *   post:
+ *     summary: Email tasdiqlash (OTP)
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "user@example.com"
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *               promoCode:
+ *                 type: string
+ *                 example: "PROMO_KOD"
+ *     responses:
+ *       200:
+ *         description: Email tasdiqlandi
+ *       400:
+ *         description: Noto'g'ri OTP
+ */
+router.post("/verify", async (req, res) => {
+    const {email, otp, promoCode} = req.body;
+    try {
+        const result = await verifyOTP(email, otp, promoCode);
+        res.json(result);
+    } catch (e) {
+        res.status(400).json({error: e.message});
+    }
+});
+
+/**
+ * @swagger
+ * /auth/resend:
+ *   post:
+ *     summary: OTP qayta yuborish
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: OTP qayta yuborildi
+ *       400:
+ *         description: Xatolik
+ */
+router.post("/resend", async (req, res) => {
+    const {email} = req.body;
+    try {
+        const result = await resendOTP(email);
+        res.json(result);
+    } catch (e) {
+        res.status(400).json({error: e.message});
+    }
+});
 
 export default router;
