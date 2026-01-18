@@ -10,7 +10,7 @@ dotenv.config();
 // Test uchun Ethereal (renderda ishlamaydi, faqat local)
 // Production uchun Brevo/Resend/SendGrid dan foydalaning
 export const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    host: process.env.EMAIL_HOST || "smtp-relay.brevo.com",
     port: process.env.EMAIL_PORT || 587,
     secure: process.env.EMAIL_SECURE === "true", // true for 465, false for 587
     auth: {
@@ -36,7 +36,7 @@ export async function sendOTPEmail(email, otp) {
     console.log("════════════════════════════════════════════════════════════");
 
     // Agar EMAIL_HOST bo'sh bo'lsa, faqat log qilish
-    if (!process.env.EMAIL_HOST || process.env.EMAIL_HOST === "smtp.gmail.com") {
+    if (!process.env.EMAIL_HOST) {
         console.warn("⚠️  SMTP xizmati sozlanmagan. Email yuborilmaydi.");
         return {success: true, devMode: true}; // Dev mode: muvaffaqiyatli deb hisoblaymiz
     }
@@ -101,7 +101,7 @@ export async function sendOTPEmail(email, otp) {
     } catch (error) {
         console.error("❌ Email yuborishda xatolik:", error.message);
         // Error bo'lsa ham, dev mode'da muvaffaqiyatli deb hisoblaymiz
-        if (!process.env.EMAIL_HOST || process.env.EMAIL_HOST === "smtp.gmail.com") {
+        if (!process.env.EMAIL_HOST) {
             return {success: true, devMode: true, error: error.message};
         }
         return {success: false, error: error.message};
@@ -119,7 +119,7 @@ export async function sendLoginOTPEmail(email, otp) {
     console.log("════════════════════════════════════════════════════════════");
 
     // Agar EMAIL_HOST bo'sh bo'lsa, faqat log qilish
-    if (!process.env.EMAIL_HOST || process.env.EMAIL_HOST === "smtp.gmail.com") {
+    if (!process.env.EMAIL_HOST) {
         console.warn("⚠️  SMTP xizmati sozlanmagan. Email yuborilmaydi.");
         return {success: true, devMode: true}; // Dev mode: muvaffaqiyatli deb hisoblaymiz
     }
