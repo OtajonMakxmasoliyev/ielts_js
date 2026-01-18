@@ -3,6 +3,7 @@
  */
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 // Email transporter yaratish
@@ -11,8 +12,7 @@ export const transporter = nodemailer.createTransport({
     port: process.env.EMAIL_PORT || 465,
     secure: process.env.EMAIL_SECURE !== "false", // true for 465, false for other ports
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS,
     },
 });
 
@@ -75,10 +75,11 @@ export async function sendOTPEmail(email, otp) {
 
     try {
         await transporter.sendMail(mailOptions);
-        return { success: true };
+        console.log(mailOptions.to, mailOptions.from)
+        return {success: true};
     } catch (error) {
         console.error("Email yuborishda xatolik:", error);
-        return { success: false, error: error.message };
+        return {success: false, error: error.message};
     }
 }
 
@@ -134,9 +135,11 @@ export async function sendLoginOTPEmail(email, otp) {
 
     try {
         await transporter.sendMail(mailOptions);
-        return { success: true };
+        console.log(mailOptions.to, mailOptions.from)
+
+        return {success: true};
     } catch (error) {
         console.error("Email yuborishda xatolik:", error);
-        return { success: false, error: error.message };
+        return {success: false, error: error.message};
     }
 }
