@@ -95,9 +95,11 @@ export async function sendOTPEmail(email, otp) {
     };
 
     try {
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Email yuborildi: ${email}`);
-        return {success: true};
+        transporter.sendMail(mailOptions).then((res) => {
+
+            console.log(`✅ Email yuborildi: ${email}`, res);
+            return {success: true};
+        });
     } catch (error) {
         console.error("❌ Email yuborishda xatolik:", error.message);
         // Error bo'lsa ham, dev mode'da muvaffaqiyatli deb hisoblaymiz
