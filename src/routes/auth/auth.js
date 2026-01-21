@@ -53,6 +53,10 @@ router.post("/register", async (req, res) => {
     // console.log(req.body)
     try {
         const user = await register(email, password, promoCode);
+        if(user.error){
+            res.status(400).json({error: user.error});
+            return
+        }
         res.json(user);
     } catch (e) {
         res.status(400).json({error: (e).message});
@@ -381,6 +385,95 @@ router.post("/resend", async (req, res) => {
         res.json(result);
     } catch (e) {
         res.status(400).json({error: e.message});
+    }
+});
+
+/**
+ * @swagger
+ * /auth/update-password:
+ *   post:
+ *     summary: Parolni yangilash
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 description: Joriy parol
+ *                 example: "oldPassword123"
+ *               newPassword:
+ *                 type: string
+ *                 description: Yangi parol (kamida 6 ta belgi)
+ *                 example: "newPassword123"
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Parol muvaffaqiyatli yangilandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Parol muvaffaqiyatli yangilandi"
+ *       400:
+ *         description: Noto'g'ri joriy parol
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server xatolik
+ */
+router.post("/update-password", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const {currentPassword, newPassword} = req.body;
+
+        // Validatsiya
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({error: "Joriy va yangi parol kiritilishi shart"});
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({error: "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak"});
+        }
+
+        // Foydalanuvchini topish
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({error: "Foydalanuvchi topilmadi"});
+        }
+
+        // Joriy parolni tekshirish
+        const bcrypt = (await import("bcryptjs")).default;
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+
+        if (!isPasswordValid) {
+            return res.status(400).json({error: "Joriy parol noto'g'ri"});
+        }
+
+        // Yangi parolni hash qilish
+        const salt = await bcrypt.genSalt(10);
+        const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+        // Parolni yangilash
+        user.passwordHash = newPasswordHash;
+        await user.save();
+
+        res.json({
+            message: "Parol muvaffaqiyatli yangilandi"
+        });
+    } catch (e) {
+        res.status(500).json({error: e.message});
     }
 });
 

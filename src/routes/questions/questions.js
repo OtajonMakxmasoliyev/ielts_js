@@ -63,13 +63,89 @@ router.post("/create", async (req, res) => {
  * @swagger
  * /questions/list:
  *   post:
- *     summary: Get all questions (user's degree based)
+ *     summary: Get all questions with pagination (user's degree based)
  *     tags: [Questions]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               page:
+ *                 type: integer
+ *                 description: Sahifa raqami
+ *                 default: 1
+ *                 minimum: 1
+ *               limit:
+ *                 type: integer
+ *                 description: Bir sahifadagi testlar soni
+ *                 default: 20
+ *                 minimum: 1
+ *                 maximum: 100
  *     responses:
  *       200:
- *         description: List of questions based on user subscription degree
+ *         description: List of questions with pagination info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 degree:
+ *                   type: string
+ *                   enum: [free, premium]
+ *                   description: Foydalanuvchi obunasi darajasi
+ *                 subscription:
+ *                   type: object
+ *                   nullable: true
+ *                   description: Obuna ma'lumotlari
+ *                   properties:
+ *                     type:
+ *                       type: string
+ *                     degree:
+ *                       type: string
+ *                     remaining_tests:
+ *                       type: integer
+ *                     tarif_name:
+ *                       type: string
+ *                 questions:
+ *                   type: array
+ *                   description: Testlar ro'yxati
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       title:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       tags:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       metadata:
+ *                         type: object
+ *                       published:
+ *                         type: boolean
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       blocked:
+ *                         type: boolean
+ *                         description: Premium test, free user uchun bloklangan
+ *                 page:
+ *                   type: integer
+ *                   description: Joriy sahifa
+ *                 limit:
+ *                   type: integer
+ *                   description: Bir sahifadagi elementlar soni
+ *                 total:
+ *                   type: integer
+ *                   description: Umumiy testlar soni
+ *                 pages:
+ *                   type: integer
+ *                   description: Umumiy sahifalar soni
  *       401:
  *         description: Unauthorized
  *       500:
@@ -77,6 +153,7 @@ router.post("/create", async (req, res) => {
  */
 router.post("/list", async (req, res) => {
     try {
+        const {page = 1, limit = 20} = req.body;
         const userId = req.user.id;
 
         // Aktiv obunani topish (premium yoki package)
@@ -103,16 +180,56 @@ router.post("/list", async (req, res) => {
             };
         }
 
-        // Testlarni degree bo'yicha filterlash
-        const questions = await Question.find({
-            "metadata.degree": degree
-        }).select("title type slug tags metadata published createdAt");
+        // Umumiy soni
+        const total = await Question.countDocuments({
+            "metadata.degree": {$in: ["free", "premium"]}
+        });
+
+        // Aggregation pipeline bilan blocked maydonini qo'shish va pagination
+        const questions = await Question.aggregate([
+            {
+                $match: {
+                    "metadata.degree": {$in: ["free", "premium"]}
+                }
+            },
+            {
+                $addFields: {
+                    blocked: {
+                        $cond: [
+                            {$and: [
+                                {$eq: ["$metadata.degree", "premium"]},
+                                {$eq: [degree, "free"]}
+                            ]},
+                            true,
+                            false
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    type: 1,
+                    tags: 1,
+                    metadata: 1,
+                    published: 1,
+                    createdAt: 1,
+                    blocked: 1
+                }
+            },
+            {$sort: {createdAt: -1}},
+            {$skip: (page - 1) * limit},
+            {$limit: limit}
+        ]);
 
         res.json({
             degree,
             subscription: subscriptionInfo,
             questions,
-            total: questions.length
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
         });
     } catch (err) {
         res.status(500).json({error: err.message});
