@@ -9,7 +9,7 @@
  */
 
 import multer from 'multer';
-import { isImage, isPDF, checkFileSize, formatFileSize } from '../services/s3Service.js';
+import { isImage, isPDF, isAudio, checkFileSize, formatFileSize } from '../services/s3Service.js';
 
 // Memory storage - fayllarni RAM da saqlaydi (S3 ga yuklash uchun qulay)
 const storage = multer.memoryStorage();
@@ -17,6 +17,9 @@ const storage = multer.memoryStorage();
 
 // Maksimal fayl hajmi (default: 5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+// Maksimal audio fayl hajmi
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
 
 // Fayl filteri - faqat rasm va PDF lar
 const fileFilter = (req, file, cb) => {
@@ -28,6 +31,19 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+// Audio fayl filteri
+const audioFileFilter = (req, file, cb) => {
+    const allowedMimeTypes = [
+        'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave',
+        'audio/x-wav', 'audio/mp4', 'audio/x-m4a', 'audio/ogg', 'audio/vorbis'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Faqat audio fayllariga ruxsat beriladi (mp3, wav, m4a, ogg)'), false);
+    }
+};
+
 // Multer konfiguratsiyasi
 export const upload = multer({
     storage: storage,
@@ -35,6 +51,15 @@ export const upload = multer({
         fileSize: MAX_FILE_SIZE
     },
     fileFilter: fileFilter
+});
+
+// Audio uchun multer konfiguratsiyasi
+export const uploadAudio = multer({
+    storage: storage,
+    limits: {
+        fileSize: MAX_AUDIO_SIZE
+    },
+    fileFilter: audioFileFilter
 });
 
 /**
@@ -171,6 +196,52 @@ export const uploadFiles = (req, res, next) => {
 };
 
 /**
+ * Audio faylni yuklash uchun middleware
+ */
+export const uploadAudioFile = (req, res, next) => {
+    const audioUpload = uploadAudio.single('audio');
+
+    audioUpload(req, res, (err) => {
+        if (err) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({
+                    error: {
+                        code: 'FILE_TOO_LARGE',
+                        message: `Audio fayl hajmi juda katta. Maksimal: ${formatFileSize(MAX_AUDIO_SIZE)}`
+                    }
+                });
+            }
+            if (err.message.includes('Faqat audio')) {
+                return res.status(400).json({
+                    error: {
+                        code: 'INVALID_FILE_TYPE',
+                        message: 'Faqat audio fayllariga ruxsat beriladi (mp3, wav, m4a, ogg)'
+                    }
+                });
+            }
+            return res.status(400).json({
+                error: {
+                    code: 'UPLOAD_ERROR',
+                    message: err.message
+                }
+            });
+        }
+
+        // Audio ekanligini qo'shimcha tekshirish
+        if (req.file && !isAudio(req.file.mimetype)) {
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_FILE_TYPE',
+                    message: 'Faqat audio fayllariga ruxsat beriladi'
+                }
+            });
+        }
+
+        next();
+    });
+};
+
+/**
  * Xatoliklarni ushlaydigan middleware
  */
 export const handleUploadError = (error, req, res, next) => {
@@ -209,6 +280,8 @@ export default {
     upload,
     uploadSingle,
     uploadMultiple,
+    uploadAudio,
+    uploadAudioFile,
     uploadAvatar,
     uploadDocument,
     uploadFiles,

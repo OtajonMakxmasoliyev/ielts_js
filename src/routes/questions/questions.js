@@ -11,6 +11,114 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /questions/create-listening:
+ *   post:
+ *     summary: Create a new listening test
+ *     description: IELTS Listening test yaratish (4 ta Part bilan)
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - parts
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "IELTS Listening Test 1"
+ *               type:
+ *                 type: string
+ *                 example: "listening"
+ *               parts:
+ *                 type: array
+ *                 minItems: 4
+ *                 maxItems: 4
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     markdown:
+ *                       type: string
+ *                     answers:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     part_type:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     audio:
+ *                       type: object
+ *                       properties:
+ *                         url:
+ *                           type: string
+ *                         key:
+ *                           type: string
+ *                         duration:
+ *                           type: number
+ *                         format:
+ *                           type: string
+ *                         size:
+ *                           type: number
+ *                     transcript:
+ *                       type: string
+ *                     audioMetadata:
+ *                       type: object
+ *     responses:
+ *       201:
+ *         description: Listening test created successfully
+ *       400:
+ *         description: Invalid data - 4 ta Part majburiy
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/create-listening", async (req, res) => {
+    try {
+        const {parts, ...questionData} = req.body;
+
+        // 4 ta Part tekshiruvi
+        if (!Array.isArray(parts) || parts.length !== 4) {
+            return res.status(400).json({
+                error: 'INVALID_PARTS_COUNT',
+                message: 'Listening test uchun 4 ta Part majburiy'
+            });
+        }
+
+        // Har bir Part audio/transcript mavjudligini tekshirish
+        for (const part of parts) {
+            if (!part.audio || !part.audio.url) {
+                return res.status(400).json({
+                    error: 'MISSING_AUDIO',
+                    message: 'Har bir Part uchun audio fayl majburiy'
+                });
+            }
+        }
+
+        // Type ni listening qilish
+        questionData.type = questionData.type || 'listening';
+
+        const question = new Question(questionData);
+        await question.save();
+
+        const createdParts = await Part.insertMany(
+            parts.map(p => ({...p, collection_id: question._id}))
+        );
+
+        question.parts = createdParts.map(p => p._id);
+        await question.save();
+
+        res.status(201).json(question);
+    } catch (err) {
+        res.status(400).json({error: (err).message});
+    }
+});
+
+/**
+ * @swagger
  * /questions/create:
  *   post:
  *     summary: Create a new question

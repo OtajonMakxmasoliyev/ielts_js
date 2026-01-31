@@ -8,9 +8,26 @@ const DeviceSchema = new Schema({
 
 const UserSchema = new Schema({
     email: { type: String, unique: true, required: true },
-    passwordHash: { type: String, required: true },
+
+    // Local auth uchun
+    passwordHash: { type: String }, // required: false qilindi (Google user uchun)
+
+    // Auth turi
+    provider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local",
+    },
+
+    // Google auth uchun
+    googleId: { type: String },
+    fullName: { type: String },
+    avatar: { type: String },
+
     role: { type: String, default: "student" },
     active: { type: Boolean, default: true },
+
+    // Local (OTP) flow uchun
     isVerified: { type: Boolean, default: false }, // Email tasdiqlanganligi
     otp: { type: String }, // OTP kod
     otpExpires: { type: Date }, // OTP muddati

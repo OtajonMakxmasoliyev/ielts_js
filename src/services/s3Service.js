@@ -188,6 +188,34 @@ export function checkFileSize(size, maxSize) {
     return size <= maxSize;
 }
 
+/**
+ * Audio formatini tekshirish
+ * @param {string} mimetype - Fayl turi
+ * @returns {boolean}
+ */
+export function isAudio(mimetype) {
+    const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav',
+                        'audio/wave', 'audio/x-wav', 'audio/mp4',
+                        'audio/x-m4a', 'audio/ogg', 'audio/vorbis'];
+    return audioTypes.includes(mimetype);
+}
+
+/**
+ * Audio formatini olish
+ * @param {string} mimetype - Fayl turi
+ * @returns {string}
+ */
+export function getAudioFormat(mimetype) {
+    const formatMap = {
+        'audio/mpeg': 'mp3', 'audio/mp3': 'mp3',
+        'audio/wav': 'wav', 'audio/wave': 'wav',
+        'audio/x-wav': 'wav', 'audio/mp4': 'm4a',
+        'audio/x-m4a': 'm4a', 'audio/ogg': 'ogg',
+        'audio/vorbis': 'ogg'
+    };
+    return formatMap[mimetype] || 'unknown';
+}
+
 export default {
     uploadFileToS3,
     deleteFileFromS3,
@@ -197,5 +225,7 @@ export default {
     formatFileSize,
     isImage,
     isPDF,
-    checkFileSize
+    checkFileSize,
+    isAudio,
+    getAudioFormat
 };

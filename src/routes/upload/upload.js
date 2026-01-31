@@ -10,13 +10,16 @@
  */
 
 import express from 'express';
-import { uploadAvatar, uploadDocument, uploadFiles } from '../../middleware/upload.js';
+import { uploadAvatar, uploadDocument, uploadFiles, uploadAudioFile } from '../../middleware/upload.js';
 import {
     uploadFileToS3,
     deleteFileFromS3,
     sanitizeFilename,
     isImage,
-    isPDF
+    isPDF,
+    isAudio,
+    getAudioFormat,
+    formatFileSize
 } from '../../services/s3Service.js';
 import { authMiddleware } from '../../middleware/auth.js';
 
@@ -88,13 +91,14 @@ router.get("/test", async (req, res) => {
         endpoints: {
             avatar: 'POST /upload/avatar',
             document: 'POST /upload/document',
+            audio: 'POST /upload/audio',
             files: 'POST /upload/files',
             delete: 'DELETE /upload/:key'
         },
         requirements: {
             contentType: 'multipart/form-data',
-            maxSize: '5MB',
-            allowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'],
+            maxSize: '5MB (image/PDF), 20MB (audio)',
+            allowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'mp3', 'wav', 'm4a', 'ogg'],
             maxFiles: 10
         }
     });
@@ -291,6 +295,125 @@ router.post("/document", authMiddleware, uploadDocument, async (req, res) => {
 
     } catch (error) {
         console.error('Document yuklash xatolik:', error);
+        res.status(500).json({
+            error: {
+                code: 'SERVER_ERROR',
+                message: 'Server xatoligi'
+            }
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /upload/audio:
+ *   post:
+ *     summary: Audio yuklash
+ *     description: IELTS Listening test uchun audio fayl yuklash (mp3, wav, m4a, ogg)
+ *     tags: [Upload]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - audio
+ *             properties:
+ *               audio:
+ *                 type: string
+ *                 format: binary
+ *                 description: Audio fayli (mp3, wav, m4a, ogg)
+ *     responses:
+ *       200:
+ *         description: Audio muvaffaqiyatli yuklandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Audio muvaffaqiyatli yuklandi"
+ *                 url:
+ *                   type: string
+ *                   example: "https://bucket.s3.amazonaws.com/audios/file.mp3"
+ *                 key:
+ *                   type: string
+ *                   example: "audios/1234567890-abc123.mp3"
+ *                 format:
+ *                   type: string
+ *                   example: "mp3"
+ *                 size:
+ *                   type: object
+ *                   properties:
+ *                     bytes:
+ *                       type: integer
+ *                       example: 5242880
+ *                     formatted:
+ *                       type: string
+ *                       example: "5.00 MB"
+ *       400:
+ *         description: Xato - Fayl yuborilmagan yoki noto'g'ri format
+ *       401:
+ *         description: Avtorizatsiya xatosi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.post("/audio", authMiddleware, uploadAudioFile, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                error: {
+                    code: 'NO_FILE',
+                    message: 'Audio fayl yuborilmagan'
+                }
+            });
+        }
+
+        const userId = req.user.id;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(7);
+        const extension = req.file.originalname.split('.').pop();
+        const filename = sanitizeFilename(req.file.originalname);
+
+        // Fayl yo'li: audios/userId-timestamp-random.ext
+        const key = `audios/${userId}-${timestamp}-${random}.${extension}`;
+
+        // S3 ga yuklash
+        const result = await uploadFileToS3(req.file.buffer, key, req.file.mimetype);
+
+        if (!result.success) {
+            return res.status(500).json({
+                error: {
+                    code: 'UPLOAD_FAILED',
+                    message: 'Audio faylni yuklashda xatolik'
+                }
+            });
+        }
+
+        // Audio formatini aniqlash
+        const format = getAudioFormat(req.file.mimetype);
+
+        res.json({
+            success: true,
+            message: 'Audio muvaffaqiyatli yuklandi',
+            url: result.url,
+            key: result.key,
+            format: format,
+            size: {
+                bytes: req.file.size,
+                formatted: formatFileSize(req.file.size)
+            }
+        });
+
+    } catch (error) {
+        console.error('Audio yuklash xatolik:', error);
         res.status(500).json({
             error: {
                 code: 'SERVER_ERROR',

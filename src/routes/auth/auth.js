@@ -2,6 +2,10 @@ import {Router} from "express";
 import {register, login, refresh, deleteDevices, getDevices, verifyOTP, resendOTP} from "../../services/auth.js";
 import {authMiddleware} from "../../middleware/auth.js";
 import User from "../../models/User.js";
+import {OAuth2Client} from "google-auth-library";
+import jwt from "jsonwebtoken";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = Router();
 
@@ -63,6 +67,101 @@ router.post("/register", async (req, res) => {
     }
 });
 
+
+/**
+ * @swagger
+ * /auth/google:
+ *   post:
+ *     summary: Google orqali login/register
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Google ID token
+ *                 example: "eyJhbGciOiJSUzI1NiIsIm..."
+ *     responses:
+ *       200:
+ *         description: Muvaffaqiyatli login/register
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access_token:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                 isNewUser:
+ *                   type: boolean
+ *       400:
+ *         description: Google token xato yoki email topilmadi
+ */
+router.post("/google", async (req, res) => {
+    const {token} = req.body;
+
+    try {
+        // 1. Google token verify
+        const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const {email, name, picture, sub} = payload;
+
+        if (!email) {
+            return res.status(400).json({error: "Google email not found"});
+        }
+
+        // 2. User tekshirish
+        let user = await User.findOne({email});
+
+        // 3. Agar yo'q bo'lsa — register
+        let isNewUser = false;
+        if (!user) {
+            isNewUser = true;
+            user = await User.create({
+                email,
+                fullName: name,
+                avatar: picture,
+                googleId: sub,
+                provider: "google",
+                isVerified: true, // Google orqali kelyotgan uchun tasdiqlangan
+                role: "student",
+                active: true,
+            });
+        }
+
+        // 4. JWT yaratish (loyihada ishlatilayotgan formatga mos)
+        const ACCESS_SECRET = process.env.ACCESS_SECRET || "accesssecret";
+        const access_token = jwt.sign(
+            {id: user._id, role: user.role},
+            ACCESS_SECRET,
+            {expiresIn: "7d"}
+        );
+
+        res.json({
+            access_token,
+            email: user.email,
+            role: user.role,
+            isNewUser,
+        });
+    } catch (e) {
+        console.error("Google auth error:", e);
+        res.status(400).json({error: "Google authentication failed"});
+    }
+});
 
 /**
  * @swagger
